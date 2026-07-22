@@ -113,7 +113,7 @@ $$
 N=N_e+N_f=a_nb^n+\ldots+a_0b^0+a_{-1}b^{-1}+\ldots
 $$
 
-Donde $N_e$ y $N_f$ son la parte entera y la parte fraccionaria de $N$ respectivamente. 
+Donde $N_e$ y $N_f$ son la parte entera y la parte fraccionaria de $N$ respectivamente.
 La parte fraccionaria sigue siempre a la parte entera en cualquier base; por lo tanto, $N_e$ puede convertirse igual que antes y $N_f$ se convierte por separado.
 
 Estudiaremos entonces como convertir las partes fraccionarias de un número. Sean:
@@ -157,15 +157,15 @@ Para determinar los coeficientes $a_{-1},a_{-2},\ldots$ para la base $b$, se obs
 
 1. Primero multiplicamos $N_f$ por $b$ (con aritmética de $B$):
 
-    $$
-    b\cdot N_f=a_{-1}+a_{-2}b^{-1}+a_{-3}b^{-2}+\ldots
-    $$
+   $$
+   b\cdot N_f=a_{-1}+a_{-2}b^{-1}+a_{-3}b^{-2}+\ldots
+   $$
 
 2. De donde observamos, que la parte entera de $b\cdot N_f$ es $a_{-1}$. Continuamos restando $a_{-1}$ y luego multiplicando por $b$ nuevamente:
 
-    $$
-    b(b\cdot N_f-a_1)=a_{-2}+a_{-3}b^{-1}+\ldots
-    $$
+   $$
+   b(b\cdot N_f-a_{-1})=a_{-2}+a_{-3}b^{-1}+\ldots
+   $$
 
 3. Nuevamente observamos que la parte entera de $b(b\cdot N_f-a_1)$ es $a_{-2}$.
 4. Podemos repetir esta idea cuantas veces queramos para obtener el número deseado de decimales. Puede suceder que este proceso no termine en ningún punto.
