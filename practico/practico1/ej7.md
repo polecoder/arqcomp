@@ -84,37 +84,37 @@ Para la parte fraccionaria:
 $$
 \begin{aligned}
 &2(0.75)=1.50\Rightarrow a_{-1}=1\\
-&2(0.50)=1.00\Rightarrow a_{-2}=0\\
+&2(0.50)=1.00\Rightarrow a_{-2}=1\\
 \end{aligned}
 $$
 
-Entonces $N_f=0.100000$ ($6$ bits).
+Entonces $N_f=0.110000$ ($6$ bits).
 Sumamos las partes obtenidas para obtener el resultado:
 
 $$
-N_e+N_f=0000001000.100000
+N_e+N_f=0000001000.110000
 $$
 
 Ahora tenemos que multiplicar por $2^6$, obteniendo:
 
 $$
-0000001000100000
+0000001000110000
 $$
 
 Y en este caso, el número que tenemos si es negativo, por lo tanto, hacemos el complemento a dos del mismo.
 
 $$
 \begin{aligned}
-&1111110111011111+1\\
+&1111110111001111+1\\
 &=\scriptstyle{(\text{operatoria})}\\
-&1111110111100000\\
+&1111110111010000\\
 \end{aligned}
 $$
 
 Entonces el resultado final es:
 
 $$
-1111110111100000
+1111110111010000
 $$
 
 Esto concluye esta parte.
