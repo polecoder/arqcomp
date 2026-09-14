@@ -311,3 +311,145 @@ Entonces $f$ puede expresarse como:
 Hasta ahora, construimos un método sistemático para describir a las funciones booleanas como una expresión de sus variables. Pero este método no asegura que la expresión sea la más simple posible.
 Es importante entender, que el hecho de que la expresión sea o no la más simple posible no es algo trivial o caprichoso, es **fundamental** para la construcción práctica de circuitos lógicos, por lo que analizaremos algunos métodos para simplificar expresiones booleanas, para poder aplicarlos a las expresiones obtenidas como sumas de productos canónicos.
 
+### Método algebraico
+
+Este método consiste en la aplicación de transformaciones algebraicas para lograr expresiones más sencillas. Está claro que este método no es sistemático, pero es la base de ellos.
+Resumimos acá algunas de las propiedades del álgebra que utilizaremos para simplificar:
+
+1. $f\cdot\overline{f}=0$
+2. $f+\overline{f}=1$
+3. $g\cdot f+\overline{g}\cdot f=f$
+4. $g\cdot f+f=f$
+5. $f+\overline{f}\cdot g=f+g$
+
+Veamos un ejemplo para ver como se utilizan estas propiedades para simplificar una expresión.
+Sea $f=\overline{ab}c+a\overline{b}c+a\overline{bc}+\overline{a}bc$. Razonemos con las propiedades que mencionamos:
+
+$$
+\begin{aligned}
+&\overline{ab}c+a\overline{b}c+a\overline{bc}+\overline{a}bc\\
+&=\scriptstyle{(\text{propiedad 3 a los dos primeros términos})}\\
+&\overline{b}c+a\overline{bc}+\overline{a}bc\\
+&=\scriptstyle{(\text{distributividad})}\\
+&\overline{b}(c+a\overline{c})+\overline{a}bc\\
+&=\scriptstyle{(\text{propiedad 5})}\\
+&\overline{b}(c+a)+\overline{a}bc\\
+&=\scriptstyle{(\text{distributividad})}\\
+&\overline{b}c+\overline{b}a+\overline{a}bc\\
+&=\scriptstyle{(\text{distributividad})}\\
+&c(\overline{b}+\overline{a}b)+\overline{b}a\\
+&=\scriptstyle{(\text{propiedad 5})}\\
+&c(\overline{b}+\overline{a})+\overline{b}a\\
+&=\scriptstyle{(\text{distributiva})}\\
+&\overline{b}c+\overline{a}c+a\overline{b}
+\end{aligned}
+$$
+
+Sin embargo, esta no es la expresión más reducida de $f$. Veamos que:
+
+$$
+\begin{aligned}
+&\overline{ab}c+a\overline{b}c+a\overline{bc}+\overline{a}bc\\
+&=\scriptstyle{(\text{propiedad 3 al primer término y al cuarto})}\\
+&\overline{a}c+a\overline{b}c+a\overline{bc}\\
+&=\scriptstyle{(\text{propiedad 3 al segundo término y al tercero})}\\
+&\overline{a}c+a\overline{b}
+\end{aligned}
+$$
+
+Esta si, es la expresión más reducida de $f$.
+Como vimos con este ejemplo, el procedimiento descrito no siempre garantiza llegar a la expresión más reducida posible, ya que depende de como se eligen las propiedades a aplicar y los términos sobre los cuales se aplican.
+
+### Diagrama de Karnaugh
+
+El diagrama de Karnaugh es un método de simplificación **sistemático**. Éste se basa en la propiedad 3 que vimos anteriormente:
+
+- $g\cdot f+\overline{g}\cdot f=f$
+
+El método consiste en utilizar una cuadricula en la cual, a cada cuadrado le corresponde un producto canónico posible y que al pasar de uno a otro cualquiera de sus adyacentes, solo cambie el valor de una de las variables en juego. Veamos ejemplos según la cantidad de variables de la expresión que queremos simplificar:
+
+**3 variables**
+
+$$
+\begin{array}{c|c|c|c|c}
+c/ab&00&01&11&10\\
+\hline
+0\\
+\hline
+1\\
+\end{array}
+$$
+
+**4 variables**
+
+$$
+\begin{array}{c|c|c|c|c}
+cd/ab&00&01&11&10\\
+\hline
+00\\
+\hline
+01\\
+\hline
+11\\
+\hline
+10\\
+\end{array}
+$$
+
+**5 variables**
+
+$$
+\begin{array}{c|c|c|c|c}
+cd/ab&00&01&11&10\\
+\hline
+00\\
+\hline
+01\\
+\hline
+11\\
+\hline
+10\\
+\end{array}
+\qquad
+\begin{array}{c|c|c|c|c}
+cd/ab&00&01&11&10\\
+\hline
+00\\
+\hline
+01\\
+\hline
+11\\
+\hline
+10\\
+\end{array}
+$$
+
+Donde la primera representa aquella donde $e=0$ y la segunda aquella donde $e=1$.
+
+---
+
+En estas cuadrículas, se marca con $1$ los lugares para los cuales la combinación de valores de las variables hace que la función valga $1$.
+Luego, el método consiste en intentar agrupar los "unos" formando los rectángulos más grandes posibles, repitiendo este proceso hasta que todos los "unos" estén comprendidos en algún rectángulo (siendo la cantidad total de rectángulos la menor posible).
+Es necesario aclarar que la cantidad de elementos agrupados por rectángulo debe ser una potencia de $2$.
+
+**Nota:** El diagrama es circular, los elementos de cada borde son adyacentes con los del borde opuesto. Esto será importante para formar los rectángulos.
+
+Veamos algunos ejemplos:
+
+![Figura 2](./img/clase5fig2.png)
+
+Una vez que agrupamos en rectángulos con el proceso anterior, la mínima expresión de la función se obtiene sumando el producto de las variables **que no cambian** dentro del rectángulo.
+Por ejemplo, en el primer rectángulo naranja cada "uno" tiene que $\overline{a}$ aparece siempre.
+
+Los diagramas anteriores darían las siguientes expresiones simplificadas:
+
+- $f_1=\overline{ac}+b\overline{c}d$
+- $f_2=\overline{abc}+\overline{ac}d+a\overline{d}$
+
+#### Nota sobre el diagrama de Karnaugh para 5 variables
+
+Ya vimos que el caso para 5 variables es particular, en el sentido de que usamos 2 tablas diferentes para el valor de la variable $e$.
+Lo único diferente que tenemos para estos casos es como funciona la agrupación, por lo que establezcamos dos reglas prácticas para mantener claro este caso:
+
+1. Los bordes son "adyacentes" con sus opuestos como en todos los casos anteriores.
+2. Además, las tablas están superpuestas en un sentido tridimensional, una arriba de la otra. Por lo tanto podemos agrupar cuando los "unos" se ubican en diferentes tablas pero misma posición.
