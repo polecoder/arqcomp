@@ -38,7 +38,7 @@ a:hover {
 }
 
 figcaption {
-  display: hidden;
+  display: none;
 }
 
 /* ----------------------------- Barra lateral ---------------------------- */
