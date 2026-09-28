@@ -43,4 +43,93 @@ R&S&Q_{n+1}\\
 \end{array}
 $$
 
+Por otra parte, el símbolo que se utiliza para representar el bloque de circuito es:
+
+![Figura 2](./img/clase8fig2.png)
+
 El nombre de las entradas viene de SET (salida principal en 1) y RESET (salida principal en 0).
+
+### Flip-flop R-S sincrónico
+
+Uno de los problemas que se presentan al intentar utilizar este tipo de circuitos como elemento de memoria es el hecho de las entradas R y S pueden variar en momentos no deseados y el flip-flop responderá según esos cambios según su tabla de verdad.
+
+Para evitar esta situación, se introduce una señal de sincronismo para el circuito: la habilitación o el reloj. Ésta indicará cuando son válidos los valores de R, S y cualquier otra señal significativa para el circuito completo. Esta entrada puede actuar de distintas maneras como veremos más adelante.
+
+El circuito interno de un flip-flop R-S sincrónico es el siguiente:
+
+![Figura 3](./img/clase8fig3.png)
+
+Cuando la entrada de control G está en 1, las entradas R y S aparecen en la entrada de los NOR, mientras que si la entrada de control G está en 0, entonces las entradas de los NOR serán ambas 0.
+A este tipo de control del circuito, donde las entradas se consideran solo si la entrada de control G está en 1; se denomina "control por compuerta", "control por habilitación" o "control por nivel".
+
+El otro tipo de control corresponde a un circuito donde lo que interesa es la transición de 0 a 1 de la entrada de control. En este caso se dice que se trabaja con un "reloj (clock) por flanco".
+
+Normalmente en el curso trabajaremos con flip-flops R-S que funcionan en la modalidad "por nivel", mientras que en los restantes lo habitual será trabajar en modalidad "por flanco".
+
+Los símbolos de este flip-flop son:
+
+![Figura 4](./img/clase8fig4.png)
+
+### Flip-flop D
+
+Este flip-flop puede verse como una variante del flip-flop R-S, que tiene el siguiente circuito interno:
+
+![Figura 5](./img/clase8fig5.png)
+
+Este circuito se comporta como el R-S para cuando R y S toman valores opuestos.
+Esto lleva a que la tabla de verdad de un flip-flop D es:
+
+$$
+\begin{array}{c|c}
+\text{D}&\text{Q}_{n+1}\\
+\hline
+0&0\\
+1&1\\
+\end{array}
+$$
+
+Y su ecuación característica es:
+
+$$
+\boxed{\text{Q}_{n+1}=\text{D}_n}
+$$
+
+Lo que indica esta ecuación con palabras, es que el nuevo valor de la salida Q corresponde al valor actual de la entrada D.
+Los subíndices en las ecuaciones características se interpretan de la siguiente manera:
+
+- $n$ representa el instante o estado actual.
+- $n+1$ representa el instante o estado siguiente, correspondiente al siguiente evento de sincronización del circuito.
+
+Para ser más precisos con el comportamiento de este circuito:
+
+- Para los flip-flops D con control por nivel: cuando la entrada G=1, el nuevo valor de la salida corresponde a la salida D; mientras que si G=0, la salida mantiene el valor de D inmediatamente anterior a la transición de 1 a 0 para la entrada G.
+- Para los flip-flops D con control por flanco, el nuevo valor de la salida corresponde al valor de la entrada D al momento de la transición de la entrada CLK de 0 a 1. Mientras la entrada CLK no se encuentra en transición, la salida se mantendrá en el último valor, sin importar si existen cambios en D.
+
+Los símbolos de este flip-flop son:
+
+![Figura 6](./img/clase8fig6.png)
+
+### Flip-flop T
+
+El flip-flop T (toggle) tiene el siguiente símbolo:
+
+![Figura 7](./img/clase8fig7.png)
+
+Y la siguiente ecuación característica: 
+
+$$
+\boxed{\text{Q}_{n+1}=\text{Q}_n\text{T}_n'+\text{Q}_n'\text{T}_n}
+$$
+
+Que corresponde a la siguiente tabla de verdad reducida:
+
+$$
+\begin{array}{c|c}
+\text{T}&\text{Q}_{n+1}\\
+\hline
+0&\text{Q}_{n}\\
+1&\text{Q}_{n}'\\
+\end{array}
+$$
+
+Todo esto describe un circuito que mantiene su salida incambiada en el tiempo cuando T=0; o bien la invierte en cada flanco ascendente cuando T=1.
