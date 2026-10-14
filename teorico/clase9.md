@@ -150,3 +150,66 @@ Precisamos 4 dígitos para representar los códigos Gray de estos números, por 
 
 En el siguiente paso, escribimos una tabla que nos indique en función del valor actual de los FF (Q3, Q2, Q1, Q0), cual debe ser el nuevo valor de forma que el circuito se comporte como deseamos:
 
+$$
+\begin{array}{ccc}
+&\text{Actuales}&\text{Nuevos}\\
+&\text{Q3\ Q2\ Q1\ Q0}&\text{Q3\ Q2\ Q1\ Q0}\\
+1&0\quad0\quad0\quad1&0\quad0\quad1\quad1\\
+2&0\quad0\quad1\quad1&0\quad0\quad1\quad0\\
+3&0\quad0\quad1\quad0&0\quad1\quad1\quad0\\
+4&0\quad1\quad1\quad0&0\quad1\quad1\quad1\\
+5&0\quad1\quad1\quad1&0\quad1\quad0\quad1\\
+6&0\quad1\quad0\quad1&0\quad1\quad0\quad0\\
+7&0\quad1\quad0\quad0&1\quad1\quad0\quad0\\
+8&1\quad1\quad0\quad0&1\quad1\quad0\quad1\\
+9&1\quad1\quad0\quad1&1\quad1\quad1\quad1\\
+10&1\quad1\quad1\quad1&0\quad0\quad0\quad1\\
+\end{array}
+$$
+
+Recordando que la ecuación característica de los flip-flops tipo D es $\text{Q}_{n+1}=\text{D}_n$, esto es que el nuevo valor de la salida del FF corresponde al valor actual de la entrada.
+
+Entonces para lograr los nuevos valores indicados en la tabla para los $\text{Q}_j$, basta con colocar en su entrada esos valores.
+De esta manera nos queda una tabla de verdad de un circuito combinatorio, cuyas entradas son los valores actuales de los $\text{Q}_j$ y sus salidas son los valores actuales de $\text{D}_j$ necesarios para lograr la transición deseada
+
+$$
+\begin{array}{c|c|c|c||c|c|c|c}
+\text{Q3}&\text{Q2}&\text{Q1}&\text{Q0}&\text{D3}&\text{D2}&\text{D1}&\text{D0}\\
+\hline
+0&0&0&1&0&0&1&1\\
+0&0&1&1&0&0&1&0\\
+0&0&1&0&0&1&1&0\\
+0&1&1&0&0&1&1&1\\
+0&1&1&1&0&1&0&1\\
+0&1&0&1&0&1&0&0\\
+0&1&0&0&1&1&0&0\\
+1&1&0&0&1&1&0&1\\
+1&1&0&1&1&1&1&1\\
+1&1&1&1&0&0&0&1\\
+\end{array}
+$$
+
+El siguiente paso es mecánico y consiste en minimizar las expresiones de las ecuaciones de los Dj usando Karnaugh. Usaremos comodines X ("don't care") en las cuentas que no son alcanzadas (0, 11 a 15).
+
+Veremos en detalle solo la tabla de D0, el razonamiento para las demás es análogo.
+
+![Figura 3](./img/clase9fig3.png)
+
+De donde resulta:
+
+- $D_0=Q_3+Q_2'Q_1+Q_2Q_1$
+
+Las demás ecuaciones son como se indica a continuación:
+
+- $D_1=Q_2'+Q_1Q_0'+Q_3Q_1'Q_0$
+- $D_2=Q_0'+Q_3'Q_2+Q_2Q_1'$
+- $D_3=Q_1'Q_0+Q_3Q_1'$
+
+Esto resulta en el siguiente circuito:
+
+![Figura 4](./img/clase9fig4.png)
+
+Para finalizar, nos restaría un único detalle: qué pasa cuando encendemos el circuito? No sabemos en que estado inicial quedarán los FF; para solucionarlo debemos agregar una línea de reset, que permita llevar el circuito a un estado inicial conocido.
+La señal de reset debe conectarse a las entradas asíncronas de los FF, de manera que pueda establecer ese estado independientemente de la señal del reloj.
+
+Para este ejemplo, el reset llevará al circuito al estado 0111 (elegido arbitrariamente), desde donde comenzará la secuencia.
