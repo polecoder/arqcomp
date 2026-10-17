@@ -1,4 +1,4 @@
-# Construir un cronómetro: calidad éxamen
+# Construir un cronómetro: calidad examen
 
 **Fecha:** 16-10-2026
 
@@ -15,9 +15,9 @@ Para construir el sistema se cuenta con una señal de reloj de 1Hz.
 1. Implementar un contador del 0-9 y un contador de 0-6 con el reset que considere correspondiente, utilizando flip-flops tipo D.
 2. Resolver el circuito planteado a partir de los contadores diseñados en la parte a, módulos display 7 segmentos (1 dígito cada módulo) y compuertas básicas.
 3. Modifique el circuito anterior agregando la siguiente funcionalidad: el circuito ahora cuenta con dos botones:
-    - El botón reset previamente descripto
-    - Un botón incrementar que incrementa el tiempo a razón de 1 minuto por cada segundo que el botón esté presionado. Mientras que se está pulsando este botón los segundos no deben incrementarse
-    Mientras el botón incrementar no esté presionado, el circuito debe funcionar normalmente.
+   - El botón reset previamente descripto
+   - Un botón incrementar que incrementa el tiempo a razón de 1 minuto por cada segundo que el botón esté presionado. Mientras que se está pulsando este botón los segundos no deben incrementarse
+     Mientras el botón incrementar no esté presionado, el circuito debe funcionar normalmente.
 
 ## Resolución
 
@@ -68,7 +68,7 @@ Y por lo tanto $D2=Q2Q1'+Q2'Q1Q0+Q2Q0'$
 
 ![Figura 4](./img/ej7fig4.png)
 
-Y por lo tanto $D1=Q3'Q1'Q0+Q1Q0$
+Y por lo tanto $D1=Q3'Q1'Q0+Q1Q0'$
 
 **D0**:
 
@@ -80,7 +80,7 @@ Resumimos todo en las siguientes expresiones:
 
 - $D3=Q3Q0'+Q2Q1Q0$
 - $D2=Q2Q1'+Q2'Q1Q0+Q2Q0'$
-- $D1=Q3'Q1'Q0+Q1Q0$
+- $D1=Q3'Q1'Q0+Q1Q0'$
 - $D0=Q0'$
 
 Esto nos permite construir el circuito que es el siguiente:
@@ -126,16 +126,6 @@ Y por lo tanto $D1=Q2'Q1'Q0+Q1Q0'$
 
 Y por lo tanto $D0=Q0'$
 
-$$
-\begin{array}{c|c|c|c|c}
-\text{Q2}/\text{Q1Q0}&00&01&11&10\\
-\hline
-0&1&&&1\\
-\hline
-1&1&&X&X\\
-\end{array}
-$$
-
 Resumimos todo en las siguientes expresiones:
 
 - $D2=Q2Q0'+Q1Q0$
@@ -149,3 +139,22 @@ Esto nos permite construir el circuito que es el siguiente:
 ---
 
 **Aclaración:** Si bien uno intenta no equivocarse en ninguna de estas tareas... Es bastante sencillo hacerlo; un 1 en un lugar incorrecto resulta en un circuito totalmente distinto que no cumple la función que queremos que cumpla. Tener esto en cuenta para no tomar el circuito como válido automáticamente
+
+### Parte 2
+
+- Resolver el circuito planteado a partir de los contadores diseñados en la parte a, módulos display 7 segmentos (1 dígito cada módulo) y compuertas básicas.
+
+Para esta parte el desafío es entender cuando se activa qué contador. Empecemos por lo más sencillo: claramente necesitamos 2 contadores 0-5 (para las decenas) y 2 contadores 0-9 (para las unidades).
+Estos contadores se separan en dos grupos: 1 contador 0-5 + 1 contador 0-9 conforman el contador de segundos; mientras que los restantes conforman el contador de minutos.
+
+El siguiente paso es entender cuando "activar" (con la señal CLK) el contador de las decenas. Esto lo querremos hacer cada vez que el contador de las unidades llegue a 9, por lo que nuestro circuito debe reflejar este comportamiento con compuertas básicas.
+
+El último paso es entender cuando "activar" el contador de minutos. De forma similar al caso anterior queremos hacerlo cuando el contador de segundos llega a 59.
+
+A continuación se muestra el circuito diseñado:
+
+![Figura 11](./img/ej7fig11.png)
+
+**Nota:** La construcción se basa principalmente en las observaciones "teóricas" que hicimos antes. El único detalle que puede confundir es: por qué usamos las compuertas NAND en vez de las AND?
+La respuesta es sencilla, y es que CLK conecta con los flip-flops, y estos no se fijan cuando la entrada CLK **es** 1, sino en cuando la entrada CLK **pasa** de 0 a 1 (flanco ascendente).
+En este caso (miremos el primer NAND), cuando el contador de 0-9 llegue a 9, el NAND valdrá 0, para pasar a 1 cuando el contador vuelva a 0: esto genera el flanco ascendente activando el contador 0-5.
