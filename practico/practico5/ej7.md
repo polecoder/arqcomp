@@ -158,3 +158,43 @@ A continuación se muestra el circuito diseñado:
 **Nota:** La construcción se basa principalmente en las observaciones "teóricas" que hicimos antes. El único detalle que puede confundir es: por qué usamos las compuertas NAND en vez de las AND?
 La respuesta es sencilla, y es que CLK conecta con los flip-flops, y estos no se fijan cuando la entrada CLK **es** 1, sino en cuando la entrada CLK **pasa** de 0 a 1 (flanco ascendente).
 En este caso (miremos el primer NAND), cuando el contador de 0-9 llegue a 9, el NAND valdrá 0, para pasar a 1 cuando el contador vuelva a 0: esto genera el flanco ascendente activando el contador 0-5.
+
+Para finalizar este cronómetro tendría que ir conectado cada conjunto de bits que representa a un número a un display de 7 segmentos, esto es muy sencillo de hacer ya que no requiere ninguna lógica adicional a partir del circuito que ya tenemos; por lo tanto se omite.
+
+### Parte 3
+
+- Modifique el circuito anterior agregando la siguiente funcionalidad: el circuito ahora cuenta con dos botones:
+  - El botón reset previamente descripto
+  - Un botón incrementar que incrementa el tiempo a razón de 1 minuto por cada segundo que el botón esté presionado. Mientras que se está pulsando este botón los segundos no deben incrementarse
+
+  Mientras el botón incrementar no esté presionado, el circuito debe funcionar normalmente.
+
+Ya tenemos realizada una de las partes: el botón reset. Esto ya existe en nuestro circuito y está funcional.
+Lo que tenemos que agregar es el botón de incrementar, que parece intimidante según su descripción: desglosémosla.
+
+> a razón de 1 minuto
+
+Esto nos indica el contador que entrará en juego: el de las unidades de los minutos.
+
+> Mientras que se está pulsando este botón los segundos no deben incrementarse
+
+Esto nos indica que tenemos que "desconectar" o "desactivar" la señal que va al contador de unidades de los segundos, mientras el botón esté presionado.
+
+> por cada segundo que el botón esté presionado.
+
+Esto es lo más intimidante, pero en realidad ya tenemos una señal de 1Hz, la manejamos desde CLK por lo que básicamente podemos ignorar esto.
+
+Todas estas modificaciones nos llevan a rediseñar el circuito como se muestra a continuación. 
+
+![Figura 12](./img/ej7fig12.png)
+
+Quizás por como lo construimos anteriormente, pero el cambio resulta en solo agregar dos compuertas.
+
+- **Observación #1:** La entrada a las unidades de los segundos está habilitada solo si **INC=0** (este comportamiento se logra con el AND).
+- **Observación #2:** La entrada a las unidades de los minutos está habilitada de la misma forma que antes, pero además cuando **INC=1** también está habilitada (este comportamiento se logra con el OR).
+
+De la misma forma que antes, faltaría agregar los display 7 segmentos que no suman demasiado para el desarrollo.
+
+---
+
+Esto concluye el ejercicio.
