@@ -56,3 +56,106 @@ Para secuenciar las microinstrucciones del microprograma, se procede de la sigui
 - 01: si la salida N de la ALU es 1 la ubicada en la dirección de la ROM ADDR
 - 10: si la salida Z de la ALU es 1 la ubicada en la dirección de la ROM ADDR
 - 11: siempre la ubicada en la dirección de la ROM ADDR
+
+## Unidad de control microprogramada
+
+En general una implementación de una unidad de control microprogramada dispone de:
+
+- una ROM para almacenar las microinstrucciones de los microprograman que implementan el ciclo de instrucción de las instrucciones de la CPU
+- una máqina secuencial que ejecuta la secuenciación de las microinstrucciones de acuerdo a la lógica que se haya codificado
+
+El esquema es:
+
+![Figura 2](./img/clase13fig2.png)
+
+La implementación de MIC-1 utiliza para su sincronismo interno la técnica de relojes desfasados, que son señales de reloj obtenidas de un reloj "padre" mediante la utilización de "líneas de retardo" (dispositivos electrónicos que provocan un cierto retraso en la propagación de la señal):
+
+![Figura 3](./img/clase13fig3.png)
+
+Incorporando la parte de sincronismo y los elementos de la unidad de control microprogramada al esquema de la MIC-1, ésta queda:
+
+![Figura 4](./img/clase13fig4.png)
+
+Los elementos de la unidad de control microprogramada de la MIC-1 son:
+
+- **MPC (Micro Program Counter):** es un registro que almacena la dirección (8 bits) de la microinstrucción que se va a ejecutar
+- **Increment:** circuito combinatorio que suma uno.
+- **Mmux:** es un multiplexor que selecciona entre la salida del Increment y los últimos 8 bits del MIR para determinar la dirección de la ROM.
+- **Control store:** memoria ROM de 256 palabras de 32 bits donde se almacenan las microinstrucciones.
+- **MIR (Micro Instruction Register):** registro que almacena la microinstrucción leída desde el Control Store
+
+## Micro ensamblador
+
+Un microprograma será una colección de códigos binarios que representen a las microinstrucciones necesarias para controlar las señales deseadas. Por ejemplo:
+
+![Figura 5](./img/clase13fig5.png)
+
+Al igual que para el caso de las instrucciones, "programar" en códigos binarios es bastante engorroso. Por esto se desarrollan lenguajes "ensambladores" que permiten utilizar una nomenclatura bastante más amigable para representar las microinstrucciones.
+
+Para este ejemplo veremos el MAL (Micro Assembler Language) propuesto por Tanenbaum para su MIC-1.
+
+Este micro-ensamblador tiene una notación basada en identfificar en cada "sentencia" a todas las señales que deben estar en 1 (no aparecen las que van en 0). Para señalar las asignaciones de los buses A, B y C usa la notación como muestra el siguiente ejemplo:
+
+- ac:=d
+
+Éste indica que se debe copiar el contenido del registro D en el registro AC, para lo cual el bus C se conecta al registro AC, se activa ENC, el registro D se conecta al bus A, la ALU realiza la operación identidad y el Shifter no desplaza.
+La codificación de esta microinstrucción sería:
+
+![Figura 6](./img/clase13fig6.png)
+
+Las cuatro operaciones de la ALU se representan así (los registros usados son a modo de ejemplo):
+
+- ac:= ac+d
+- ac:= band(ir, smask)
+- f:= ac
+- c:= inv(a)
+
+Los registros destino pueden ser cualquiera (incluyendo el MBR y el MAR), pero el MAR no puede ser operando.
+
+Las dos operaciones efectivas de la unidad de desplazamiento se representan así:
+
+- lshift(ac)
+- rshift(ir)
+
+Las operaciones de desplazamiento también aceptan como argumento una operación de la ALU:
+
+- lshift(tir+tir)
+
+(En este último caso la microinstrucción hace un shift de dos bits a la izquierda)
+Las activación de las señales RD (read) y WR (write) se realiza colocando rd o wr en la expresión.
+
+La secuenciación de las microinstrucciones se realiza mediante la expresión:
+
+- if n then goto XXXX
+- if z then goto XXXX
+
+Donde XXXX es la dirección de 8 bits de la memoria ROM donde se almacena la microinstrucción a la que se quiere ir.
+
+Las distintas expresiones pueden combinarse en una misma microinstrucción:
+
+- tir:= lshift(tir+tir); if n then goto 33
+
+El efecto de esta microinstrucción es guardar en TIR el resultado de realizar un desplazamiento a la izquierda de 2 bits del propio registro TIR y saltar a la microinstrucción 33 si es que el segundo bit más significativo del valor de TIR es 1 (notar que la ALU hace solo la suma, que representa el desplazamiento a la izquierda de un bit y por lo tanto allí el bit más significativo del resultado, es el segundo bit más significativo del original).
+
+Hay un caso particular de sentencias, donde solo nos interesa determinar un salto en alguna condición de los bits de un registro, pero no queremos asignarlo a ningún otro registro. Para ese caso se dispone del "registro virtual" llamado "alu" que se usa así:
+
+- alu:=lshift(tir+tir); if n then goto 33
+
+En este caso el resultado de la operación sobre TIR no afecta a ningún registro, pero la ALU actúa y computa el valor de la salida N según el resultado de la operación.
+
+Por ejemplo: las codificaciones del primer ejemplo mostrado corresponden a las siguientes microinstrucciones:
+
+```
+mar:=pc; rd
+rd
+ir:= mbr
+pc:=pc+1
+```
+
+Esta secuencia hace lo siguiente:
+1. Carga el registro PC en el MAR y activa las señal RD de lectura.
+2. Se mantiene RD activa (porque se asume que la lectura demora dos ciclos de reloj)
+3. Mueve el contenido leído de MBR al registro IR
+4. Suma 1 al registro PC
+
+No es díficil identificar esta sucesión de eventos con la etapa del *fetch* del ciclo instrucción.
