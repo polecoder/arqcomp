@@ -287,3 +287,239 @@ El esquema básico para el llamado de una función que recibe y devuelve los par
 1. **PUSH de parámetros:** Antes de invocar la función, se realiza el push de los parámetros al stack.
 2. **Invocación:** La rutina invocada puede o no preservar el contexto.
 3. **Retorno y POP de resultados:** Al retornar al llamador, en el tope del stack se encuentran los resultados.
+
+Al especificar la firma de la función, en el caso de utilizar el stack para el pasaje de parámetros se debe especificar **la cantidad y el orden de los mismos**. Aplica lo mismo para el resultado. Notar que la cantidad de parámetros y resultados es independiente.
+
+> **Ejemplo:** DIV-ENTERA es una función que preserva el contexto, recibe en el stack DIVIDENDO y DIVISOR con el último en el tope. Devuelve RESTO y COCIENTE con el último en el tope.
+
+Otra manera de expresar lo mismo es abusar un poco de la notación:
+
+```asm
+PUSH dividendo ; PUSH op1
+PUSH divisor ; PUSH op2
+CALL div-entera
+POP cociente ; POP res1
+POP resto ; POP res2
+```
+
+Es natural que ahora surja la duda sobre como accedemos a los parámetros pasados por el stack desde la función, si en el tope del stack tenemos la dirección de retorno que es puesta por el CALL.
+
+Para poder manipular el stack y sus parámetros, usaremos BP. Cargaremos BP con una posición conocida (SP) que nos permita acceder a otras posiciones del stack.
+
+```
+PROC div-entera
+  PUSH BP ; respaldo
+  MOV BP, SP
+  ; SS:[BP] -> posición actual stack
+  ; SS:[BP+2] -> dirección retorno
+  ; SS:[BP+4] -> divisor
+  ; SS:[BP+6] -> dividendo
+```
+
+A continuación detallamos el ejemplo completo de div-entera con la especificación que vimos anteriormente con los parámetros DIVIDENDO=1705 y DIVISOR=6:
+
+```asm
+PROC div-entera
+  PUSH BP ; respaldo
+  MOV BP, SP
+  PUSH AX ; respaldo
+  PUSH DX ; respaldo
+  PUSH CX ; respaldo
+  MOV DX, 0
+  MOV AX, [BP+6]
+  MOV CX, [BP+4]
+  DIV CX ; ver cartilla
+  ; DX=0x1 (resto), AX=0x11C (cociente)
+  MOV [BP+6], DX
+  MOV [BP+4], AX
+  POP CX
+  POP DX
+  POP AX
+  POP BP
+  RET
+ENDPROC
+```
+
+Podemos ver en la siguiente imagen cada paso de la ejecución de la rutina para entender el funcionamiento.
+
+![Figura 1](./img/clase15fig1.png)
+
+#### Ajuste de stack
+
+Cuando la cantidad de parámetros y de resultados son diferentes, es necesario manipular el stack para ajustarlo, de forma tal que al ejecutar RET se encuentre la dirección de retorno en el tope del stack y debajo estén los resultados.
+Veamos un ejemplo con más parámetros que resultados:
+
+```asm
+PUSH minuendo ; PUSH op1
+PUSH sustraendo ; PUSH op2
+CALL resta ; preserva contexto
+POP diferencia ; POP res1
+```
+
+Haciendo doble click sobre el procedimiento "resta":
+
+```asm
+PROC resta
+  PUSH BP ; respaldo
+  MOV BP, SP
+  PUSH CX ; respaldo
+  MOV CX, [BP+6]
+  SUB CX, [BP+4]
+  MOV [BP+6], CX
+  MOV CX, [BP+2] ; CX = direccion retorno
+  MOV [BP+4], CX ; [BP+4] = direccion retorno
+  POP CX
+  POP BP
+  ADD SP, 2 ; ajuste de stack
+  RET
+ENDPROC
+```
+
+**Nota:** En caso de tener más resultados que parámetros se deben reservar posiciones de stack al inicio de la rutina.
+
+## Recursión
+
+Un tipo especial de rutinas son las recursivas. Nos interesará sobre las mismas su comportamiento y su consumo de stack.
+En particular nos interesa conocer su máximo consumo posible de stack.
+
+### Ejemplo
+
+Estudiaremos el funcionamiento de las rutinas recursivas mediante un ejemplo: el factorial.
+
+> FACT es una función que recibe en AX un número positivo mayor o igual a 0 y devuelve en BX su factorial. No preserva registros
+
+En alto nivel, la función es la siguiente:
+
+```c
+short factorial(short n) {
+  if (n==0) {
+    return 1;
+  } else {
+    return n * factorial(n-1);
+  }
+}
+```
+
+#### Compilación #1
+
+**Llamada**
+
+```asm
+MOV AX, n
+CALL fact
+MOV resultado, BX
+; con n y resultado como etiquetas
+```
+
+**Ensamblador**
+
+```asm
+fact PROC
+  CMP AX, 0  ; caso base
+  JZ esCero
+  DEC AX     ; ajusto parámetro para llamada recursiva
+  CALL fact
+  INC AX     ; reajusto parámetro post llamada recursiva
+  MOV CX, AX ; guardo AX pues MUL lo modifica
+  MUL BX     ; cálculo del factorial
+  MOV BX, AX ; asigno el resultado a BX
+  MOV AX, CX ; restauro AX
+  JMP fin
+esCero:
+  MOV BX, 1  ; resultado del paso base
+fin:
+  RET
+fact ENDP
+```
+
+Como mencionamos anteriormente, nos interesa el consumo de stack en bytes. Para calcular el consumo para $n$ necesitamos dos pasos:
+
+1. Consumo de paso base: $\text{consumo}(0)=2$. Los 2 bytes que se utilizan para almacenar el IP al hacer el CALL.
+2. Consumo de paso inductivo: $\text{consumo}(n)=2+\text{consumo}(n-1)$. Los dos bytes para el CALL interno (post JZ).
+
+Con esto podemos concluir que $\text{consumo}(n)=2+2n$ (se podría probar por inducción completa)
+
+#### Compilación #2
+
+Veamos otra compilación posible, que utiliza el stack para preservar AX.
+
+**Llamada**
+
+```asm
+MOV AX, n
+CALL fact
+MOV resultado, BX
+; con n y resultado como etiquetas
+```
+
+**Ensamblador**
+
+```asm
+fact PROC
+  CMP AX, 0
+  JZ esCero
+  PUSH AX    ; respaldo
+  DEC AX     ; ajusto parámetro para llamada recursiva
+  CALL fact
+  POP AX     ; restauro respaldo
+  MUL BX     ; cálculo del factorial
+  MOV BX, AX ; asigno el resultado a BX
+  JMP fin
+esCero:
+  MOV BX, 1  ; resultado del paso base
+fin:
+  RET
+fact ENDP
+```
+
+Sobre el consumo:
+
+1. $\text{consumo}(n)=2$
+2. $\text{consumo}(n)=4+\text{consumo}(n-1)$
+3. $\text{consumo}(n)=4n+2$
+
+#### Compilación #3
+
+Veamos otra compilación posible, que utiliza el stack para el pasaje de parámetros y para los resultados.
+
+**Llamada**
+
+```asm
+PUSH n
+CALL fact
+POP resultado
+; con n y resultado como etiquetas
+```
+
+**Ensamblador**
+
+```asm
+fact PROC
+  POP DX     ; saco dirección de retorno
+  POP AX     ; guardo parámetro en AX
+  PUSH DX    ; acomodo dirección de retorno en stack
+  CMP AX, 0
+  JZ esCero
+  PUSH AX    ; guardo el contexto
+  DEC AX     ; ajusto parámetro para llamada recursiva
+  PUSH AX    ; parámetro en stack para llamada recursiva
+  CALL fact
+  POP BX     ; guardo en BX el resultado de fact(n-1)
+  POP AX     ; restauro el contexto
+  MUL BX     ; cálculo del factorial
+  MOV BX, AX ; asigno el resultado a BX
+esCero:
+  MOV BX, 0  ; resultado del paso base
+fin:
+  POP DX     ; saco dirección de retorno
+  PUSH BX    ; guardo resultado en el stack
+  PUSH DX    ; guardo dirección de retorno
+  RET
+fact ENDP
+```
+
+Sobre el consumo:
+
+1. $\text{consumo}(0)=4$
+1. $\text{consumo}(0)=4+\text{consumo}(n-1)$
+1. $\text{consumo}(0)=4+4n$
