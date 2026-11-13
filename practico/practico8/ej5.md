@@ -130,3 +130,14 @@ cantidad_bifurcaciones ENDP
 
 - Calcular el consumo de stack en el peor caso para un árbol de $N$ nodos.
 
+El peor escenario posible es aquel donde los $N$ nodos están distribuidos como una lista, en este caso el consumo está dado directamente por la cantidad de llamadas
+Evaluemos el consumo para llegar a una recurrencia que nos ayude a calcular el tamaño mínimo del stack:
+
+- $\text{consumo}(0)=14$ que corresponden a 6 registros y 1 dirección de retorno
+- $\text{consumo}(n)=14+n\cdot18$ donde:
+    - 14 son los bytes correspondientes al caso base
+    - $12n$ corresponde a los bytes para el paso recursivo asociados a registros
+    - $4n$ corresponde a los bytes para el paso recursivo asociados a parámetros para la siguiente llamada
+    - $2n$ corresponde a los bytes para el paso recursivo asociados a direcciones de retorno
+
+Esto concluye el ejercicio.
