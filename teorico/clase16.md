@@ -55,3 +55,70 @@ Según sean las características del protocolo de comunicaciones se distinguen d
 Existe otra clasificación de los buses que apunta a categorizarlos según sea la aplicación a la que se destinan, en función de la ubicación de las entidades a conectar en relación a lo que se podría definir como "frontera" del sistema. Si bien esta clasificación es discutible y eventualmente varía con el tiempo o con el alcance de lo que consideremos por "sistema, los buses se suelen distinguir entre:
 - **Internos:** cuando se utilizan para conectar sub-sistemas dentro de la "frontera" del sistema. El caso más típico e indiscutible de un bus interno es el "bus de memoria" (que conecta la CPU con los bancos de memoria).
 - **Externos:** cuando se utilizan para conectar sub-sistemas fuera de dicha frontera. Los casos más típicos y claros de este tipo de buses lo constituyen el bus SCSI (Small Computer System Interface) que se puede utilizar para conectar dispositivos de almacenamiento masivo (discos rígidos y unidades de cinta); y el bus USB (Universal Serial Bus) que se puede utilizar para conectar una variedad muy amplia de dispositivos.
+
+## Controladores de E/S
+
+La arquitectura de E/S maneja el concepto de "controlador de E/S". Un controlador de E/S es la parte del periférico que contiene su inteligencia y por lo tanto lo "controla".
+
+### Conexión a los cotroladores de E/S
+
+Existen distintas variedades en la forma que un controlador se conecta con un computador, en particular teniendo en cuenta su lugar de residencia: si en el gabinete del periférico, si en el gabinete del computador o distribuido entre ambos.
+Veremos a continuación la representación esquemática de algunos de estos casos:
+
+#### El controlador de E/S está contenido en el gabinete del computador
+
+1. El controlador de E/S está conectado directamente al bus del sistema.
+
+![Figura 1](./img/clase16fig1.png)
+
+2. El controlador de E/S está conectado a un bus distinto al bus interno del sistema, el cual se conecta al bus interno a través de un adaptador usualmente llamado "bridge" (puente).
+
+![Figura 2](./img/clase16fig2.png)
+
+#### El controlador de E/S está contenido en el gabinete del periférico
+
+En este caso no se da la situación de que el controlador de E/S pueda estar conectado directamente al bus interno del sistema, porque dicho bus no está diseñado para soportar largos recorridos de la señal. Por eso se requiere una interfaz o un bus del tipo externo que habilite la conexión. La diferencia entre interfaz y bus es que la interfaz permite la conexión de un único dispositivo, por lo que su protocolo de comunicaciones es más sencillo y no necesita de un algoritmo de administración del uso compartido.
+
+Podemos distinguir las situaciones:
+
+1. Se utiliza una interfaz conectada directamente al bus interno del sistema
+
+![Figura 3](./img/clase16fig3.png)
+
+2. Se utiliza un adaptador de bus conectado directamente al bus interno del sistema
+
+![Figura 4](./img/clase16fig4.png)
+
+3. Se utiliza un adaptador de bus conectado a un bus distinto del bus interno
+
+![Figura 5](./img/clase16fig5.png)
+
+#### El controlador de E/S está distribuido entre el gabinete del computador y el del periférico
+
+Es el caso del teclado de una computadora personal, donde parte de la inteligencia reside en el propio teclado (posee un microcontrolador que realiza el barrido de las teclas para determinar si hay alguna presionada) y parte en la placa prinipal de la computadora (donde otro microcontrolador realiza algunas funciones de conversión de códigos y repetición de teclas).
+
+### Acceso a los controladores de E/S
+
+La comunicación de la CPU con los controladores E/S se realiza a través de posiciones de memoria especiales de estos dispositivos, las que son accesibles también para la CPU. Existen dos tipos de arquitecturas de E/S respecto a la forma de acceso desde la CPU:
+
+1. La CPU dispone de un espacio de direcciones reservado para la E/S, el cual es accedido por instrucciones especialmente destinadas para ese fin (típicamente identificadas como **in** y **out**). Un ejemplo de este enfoque es la familia de procesadores Intel.
+2. La CPU accede a los controladores de E/S como si fueran posiciones normales de memoria, utilizando para tales fines cualquier instrucción que acceda a memoria. Un ejemplo de este diseño son la mayoría de las arquitecturas RISC.
+
+Al igual que en la CPU, estas memorias especiales de los controladores de E/S se llaman genéricamente **registros**. Normalmente un controlador de E/S tiene un conjunto relativamente pequeño de registros para implementar el intercambio de información con la CPU.
+Una excepción a esta regla la constituyen los controladores de video, que por requerir grandes volúmenes de información necesitan espacios de direcciones más amplios. Esto representa alguna dificultad de implementación en las arquitecturas Intel (porque el espacio de direcciones reservado a E/S es pequeño) por lo que en los PCs se adoptó una estrategia de las memorias de video en el espacio de direcciones de memoria de la CPU (en vez de utilizar el espacio de E/S).
+
+Una propiedad interesante de los registros de E/S es que aún en el caso en que se acceden como memoria, **no se comportan como memoria**, pudiendo tener comportamientos bien diferentes tales como:
+
+- **solo lectura:** el registro solo puede ser leído y si se escribe en él no se logra ningún efecto
+- **solo escritura:** el registro solo puede ser escrito y si se lee se obtiene un resultado impredecible
+- **lectura/escritura independiente:** en este caso se tienen dos registros diferentes, uno de solo lectura y otro de solo escritura accesibles en la misma dirección de E/S. Por lo que si bien se puede escribir y leer en la misma dirección, las posiciones de memoria accedidas son separadas e independientes, por lo que obviamente lo que se escribe no puede ser leído posteriormente.
+- **lectura/escritura normal:** estos registros de E/S se comportan como una posición de memoria normal, lo que se escribe puede ser leído más tarde.
+
+Otra característica importante a tener en cuenta cuando se accede a E/S es que muchas veces hay bits que no están definidos, por lo que al leerlos juntos en un byte o una palabra pueden tomar cualquier valor, con lo que la comparación del contenido del byte debe hacerse mediante el uso de **máscaras** (haciendo el AND bit a bit con un valor que tenga en uno aquellos bits que nos interesan). Algo similar ocurre al escribir, en algunos registros determinados bits que no están definidos deben, de todos modos, escribirse en un valor determinado.
+
+La cantidad de registros y su función dependen fuertemente de cada controlador y de la aplicación que tenga el mismo. De todos modos hay algunos registros característicos que están presentes en muchos de ellos:
+
+- **datos entrada:** este registro contiene un dato destinado a la CPU, proveniente del periférico, del propio controlador o de la línea de comunicaciones.
+- **datos salida:** este registro contiene un dato proveniente de la CPU y destinado al periférico, al propio controlador o a la línea de comunicaciones.
+- **estado:** este registro contiene bits que indican el estado del controlador en si mismo o del periférico que controla (ej: si hay un dato en el registro de entrada, si está libre el registro de salida, si hay un pedido de interrupción pendiente, si hay alguna condición de error en el controlador o el periférico, etc.).
+- **control:** este registro contiene bits que le indican al controlador de E/S o al periférico realizar determinada acción (ej: ponerse en línea, reiniciarse, que lea el dato del registro de salida)
