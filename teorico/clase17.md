@@ -148,3 +148,93 @@ El valor de este bit se cambia mediante instrucciones específicas del set de in
 La CPU pone automáticamente a 0 este bit al invocar la rutina de servicio de la interrupción. Por ello, una **rutina de interrupción comienza su ejecución con las interrupciones deshabilitadas** y así continuarána menos que explícitamente sean habilitadas por el código de la propia rutina. La instrucción que provoca la finalización de la rutina de interrupción y el retorno a la ejecución del programa interrumpido vuelve a recuperar el valor anterior del bit (1).
 También es de señalar que cuando una CPU comienza a funcionar (se le aplica energía por primera vez) también arranca con las interrupciones enmascaradas.
 En todas las CPU existe una entrada, independiente de la INT, denominada **NMI** (Non Maskable Interrupt) que trabaja en forma independiente de la máscara de inhibición y un pedido que sea presentado por ella será siempre procesado. La idea de esta entrada es conectar a ella pedidos de interrupción críticos (tales como la falla de la fuente de alimentación o la detección de un error de paridad en la memoria). En la práctico la arquitectura de computadoras tipo PC no la utilizan.
+- **Deshabilitación:** En este caso se actúa sobre los controladores de E/S en forma individual, de forma de inhibir su eventual pedido de interrupción. Los controladores de E/S tienen habitualmente un bit en su registro de CONTROL que actúa como máscara para su salida de pedido de interrupción. De hecho la salida tendrá el valor resultante de la ecuación
+
+  ```salida INT = bit INT registro de ESTADO AND MASK_INT registro de CONTROL```
+
+  Notemos que el bit que refleja de condición de "pedido de interrupción pendiente" del registro ESTADO sigue reflejando si el controlador requiere de la intervención de la CPU. Lo que sucede es que la salida del hardware hacia la CPU queda condicionada al valor del bit de habilitación del registro CONTROL.
+  Este mecanismo permite al programador tener poder de decisión selectivo sobre que controladores de E/S podrán generar pedidos de interrupción y cuales no.
+  El bit MASK_INT descripto inhibe totalmente la generación de interrupciones por parte del controlador E/S. Algunos controladores de E/S disponen también de otros bits de máscara que actúan a nivel diferenciado sobre las distintas posibles condiciones que generan interrupciones. Por ejemplo en un controlador de comunicaciones se pueden generar interrupciones por distintos motivos: recepción de un carácter, error en la línea de comunicaciones, carácter transmitido, cambio en las líneas de control de la comunicación, etc. y el controlador puede tener bits que inhiban de forma individual la generación de solicitudes de interrupción asociadas a cada condición.
+
+## Prioridades
+
+Existen dos situaciones que pueden llevar al mecanismo de interrupciones a tener que tomar una decisión acerca de como proceder:
+
+- hay dos (o más) solicitudes de interrupción simultáneas
+- hay una (o más) solicitud de interrupción mientras se está ejecutando una rutina de servicio de una interrupción previa y las interrupciones han sido habilitadas
+
+En cualquiera de ellas, la decisión dependerá de la existencia de prioridades entre los distintos requerimientos.
+
+### Interrupciones simultáneas
+
+Cuando una CPU o un controlador de interrupciones implementa un mecanismo de prioridades, éste determinará cual de múltiples solicitudes que ocurran a la misma vez será atendida.
+Es de notar que el concepto de simultaneidad no implica necesariamente que los pedidos de interrupción lleguen exactamente en el mismo instante de tiempo, sino que lleguen durante el período entre una verificación y otra por parte del CPU, la cual puede estar postergada en el tiempo si las interrupciones están deshabilitadas.
+
+El mecanismo de prioridades puede adoptar distintas estrategias: prioridad fija, prioridad configurable o sin prioridad.
+
+- Cuando la prioridad es **fija** siempre será atendida la solicitud que provenga de una línea de pedido que tenga mayor jerarquía. Normalmente se utiliza la numeración de las entradas para fijar su prioridad.
+- Cuando la prioridad es **configurable**, la misma se puede cambiar en función de las condiciones del sistema en general.
+- Cuando el sistema es **sin prioridad** debe implementar un sistema de selección de la solicitud a atender que asegure la equidad en selección de las distintas entradas.
+
+El mecanismo de prioridades puede estar implementado por **hardware** o por **software**. Cuando es por hardware se puede realizar a nivel de la CPU (si tiene múltiples entradas de interrupciones, ya sean directas o codificadas) o a nivel del controlador de interrupciones.
+Cuando es por software, el mecanismo se implementa como un algoritmo en la rutina de atención a la interrupción (notemos que esta vía es la única para el caso de CPUs con una única entrada INT y sin controlador de interrupciones). El algoritmo puede implementar cualquiera de las estrategias vistas, mediante un apropiado recorrido de los controladores de E/S para averiguar cual fue el que interrumpió, como ser:
+
+- recorrido lineal: siempre comenzando por el mismo y con un orden pre-establecido (prioridad fija)
+- recorrido programable: utilizando una tabla que establece el orden a seguir (prioridad configurable)
+- recorrido "round-robin": comenzando cada vez en el siguiente al último al ser atendido, en forma circular.
+
+### Interrupción de interrupción
+
+Suponiendo que las interrupciones no están enmascaradas durante la ejecución de la rutina de interrupción (recordar que para esto la rutina debe explícitamente ejecutar la instrucción que desenmascara las interrupciones) y ocurre un pedido de interrupción, la atención o no de dicha solicitud dependerá del esquema de jerarquías/prioridades que tenga implementada la CPU y/o el controlador de interrupciones.
+
+Como regla general solo se aceptará una interrupción de un nivel igual o superior al de la interrupción que está siendo actualmente atendida.
+
+Para esto el mecanismo de interrupciones mantiene en algún registro el "nivel actual de interrupción", que refleja la prioridad de la interrupción que está siendo servida. Al ocurrir una nueva solicitud, se compara el nivel de la interrupción asociado al nuevo pedido con el actual y solo se procede si es mayor o igual al actual. Ese valor es actualizado al momento de invocar la rutina de interrupción.
+
+Las distintas propuestas arquitectónicas resuelven esto de distintas formas. La propuesta Intel lo hace en el controlador de interrupciones a través del registro ISR (In Service Register), mientras que SPARC lo hace en el procesador a través de los bits de PIL (Processor Interrupt Level) del registro PS (Processor Status).
+
+## Rutinas de interrupción
+
+### Preservación del contexto
+
+Las rutinas de interrupción son la pieza de código que se ejecuta como resultado del mecanismo que desencadena la CPU al procesar un pedido de interrupción.
+
+Como esta pieza de código se ejecuta de forma asincrónica a la ejecución del programa que es interrumpido y sin conocimiento de parte de éste, hay que tener precauciones al escribir este tipo de rutinas.
+
+La consideración fundamental es que las rutinas de interrupción **deben preservar el contexto**.
+
+Se entiendo por contexto de un programa a su estado completo, el cual incluye todas sus variables y estructuras de memoria, incluyendo las que están almacenadas de forma transitoria en los registros de la CPU y alcanzando al valor de los registros especiales de la misma, en particular el registros de banderas o bits de condición (Z, N, C, V).
+
+Parte de este contexto es salvado por el hardware quién además del puntero de instrucción, en algunas estructuras salva el registro de estado del procesado (o registro de flags) como es el caso de Intel x86. Pero el resto debe ser salvado (o no alterado) por la propia rutina de interrupción, con las consideraciones correspondientes a dos situaciones distintas: no es lo mismo si la máquina es **no dedicada** que si es **dedicada**.
+
+#### Máquina no dedicada
+
+En este caso, en la máquina donde se ejecuta la rutina de interrupción existen múltiples programas en ejecución, con distintos propósitos, los cuales han sido programados por distintos equipos de programadores, sin coordinación alguna.
+
+En este caso hay que respetar a rajatabla la regla de que la rutina de interrupción no puede modificar ninguna parte del contexto del programa interrumpido, y si requiere del uso de algún registro de la CPU (cosa muy probable) deberá previamente salvarlo. Los lugares y procedimientos para hacerlo dependerán del tipo de arquitectura (stack, array de memoria local, etc.)
+
+#### Máquina dedicada
+
+En este caso la máquina está totalmente dedicada a una función específica y todos los programas y rutinas que en ella se ejecutan están desarrollados por el mismo equipo de programadores o por equipos fuertemente coordinados.
+En este caso los programadores pueden establecer reglas de uso de los recursos compartidos del sistema (típicamente los registros de la CPU) de forma que se evite la necesidad de tener que salvarlos en la rutina de interrupción e incluso puede existir la necesidad de que la rutina de interrupción modifique alguna variable del programa interrumpido (típicamente el programa principal) de forma de alertarlo de alguna condición ocurrida en la E/S y comunicada por este mecanismo.
+
+### Estrategias de programación
+
+Para programar sistemas que contengan rutinas de interrupción existen múltiples estrategias y estilos. Normalmente constarán de un programa principal y una o más rutinas de interrupción asociadas a los dispositivos de E/S que deben ser considerados por el sistema.
+
+Se pueden distinguir los siguientes casos en cuanto a la decisión de donde colocar la lógica del sistema (la parte del código que implementa el núcleo de su comportamiento):
+
+- toda la lógica del sistema se implementa en el programa principal y las rutinas de interrupción solamente modifican banderas indicando que se ejecutaron.
+- toda la lógica del sistema se implementa en las rutinas de interrupción y el programa principal o bien está en loop infinito (máquina dedicada) o bien instala e inicializa las rutinas de interrupción y termina (máquina no dedicada).
+- la lógica del sistema se implementa en parte en el programa principal y en parte en las rutinas de interrupción.
+
+No hay una regla general que indice cual de las estratregias es la más apropiada. Quizás lo que si se pueda decir es que conviene alguno de los casos extremos, porque la distribución de la lógica entre el programa principal y las rutinas se vuelve bastante engorroso para el análisis y el debug del código resultante.
+
+En particular la estrategia de poner toda la lógica en el programa principal es la que permite mayor facilidad a la hora de las tareas de depuración.
+
+También se debe tener en cuenta que en las máquinas no dedicadas **no se debe dejar en loop infinito en un programa**, porque lleva el consumo de CPU al 100% de forma permanente, lo que no es adecuado en un ambiente multitarea/multiusuario. Por lo tanto en este caso la estrategia apropiada es la de implementar la lógica totalmente en las rutinas de interrupción.
+
+La otra consideración a tener en cuenta es cómo implementar técnicas de **polling** (para controladores sin capacidad de interrumpir) en sistemas con interrupciones. En este sentido hay dos formas posibles:
+
+- se dispone de un reloj que genera una interrupción periódica y en la rutina de atención asociada se realiza la consulta al controlador de E/S. Esta variante tiene la característica de poseer cierto retardo de reacción frente a un cambio en la E/S, ya que depende del período del timer.
+- se realiza el "polling" en el programa principal. Es de notar que esta variante es la que asegura que la reacción frente a un cambio en la E/S sea instantánea.
