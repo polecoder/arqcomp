@@ -47,21 +47,27 @@ Resolveremos este ejercicio paso a paso con un procedimiento estructurado antes 
 | intSalida | ocupada | con datos | desencolar y escribir en DATO_S | salida ocupada |
 | intSalida | ocupada | vacía | nada que enviar | salida libre |
 
-Esto es lo mínimo que necesitamos para programar, aunque podríamos agregar un mapa de estados y que necesitamos hacer ante cada uno de ellos.
+4. **Programa principal:** inicializa el estado, habilita interrupciones y queda en espera activa al ser una máquina dedicada.
+
+Esto es lo mínimo que necesitamos para programar, aunque podríamos agregar una máquina de estado.
 
 ```c
 // Contexto global
-static bool usando_salida = false;
-static Cola cola = Cola.crear(MAX_BUFFER); // crea una cola de MAX_BUFFER bytes
+void main() {
+  static bool usando_salida = false;
+  static Cola cola = Cola.crear(MAX_BUFFER); // crea una cola de MAX_BUFFER bytes
+  enable();
+  while (true); // al ser máquina dedicada quedo en espera activa
+}
 ```
 
 ```c
-void intEntrada() {
+void interrupt intEntrada() {
   for (char i = 0; i <= 3; i++) {
     char direccion = 0x10 + 2*i;
     if (in(direccion) & 0x01) {
       char dato = in(direccion+1);
-      // si tengo más de dos bytes disponibles en la cola
+      // si tengo al menos dos bytes disponibles en la cola
       if (MAX_BUFFER - cola.cantidad() >= 2) {
         cola.encolar(i);
         cola.encolar(dato);
@@ -71,14 +77,14 @@ void intEntrada() {
 
   if (!usando_salida && !cola.vacia()) {
     char dato = cola.desencolar();
-    out(dato, DATO_S);
+    out(DATO_S, dato);
     usando_salida = true;
   }
 }
 ```
 
 ```c
-void intSalida() {
+void interrupt intSalida() {
   if (!cola.vacia()) {
     char dato = cola.desencolar();
     usando_salida = true;
